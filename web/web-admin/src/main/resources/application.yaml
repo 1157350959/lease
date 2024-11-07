@@ -2,6 +2,11 @@ server:
   port: 8080
 
 spring:
+  data:
+    redis:
+      host: 192.168.100.80
+      database: 0
+      password: abc123
   jackson:
     time-zone: GMT+8
   datasource:
