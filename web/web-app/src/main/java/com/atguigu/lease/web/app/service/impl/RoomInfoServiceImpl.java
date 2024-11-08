@@ -1,5 +1,6 @@
 package com.atguigu.lease.web.app.service.impl;
 
+import com.atguigu.lease.common.constant.RedisConstant;
 import com.atguigu.lease.common.login.LoginUserHolder;
 import com.atguigu.lease.model.entity.*;
 import com.atguigu.lease.model.enums.ItemType;
@@ -21,6 +22,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -64,6 +66,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
     @Autowired
     private BrowsingHistoryService browsingHistoryService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @Override
     public IPage<RoomItemVo> pageItem(Page<RoomItemVo> roomItemVoPage, RoomQueryVo queryVo) {
         return roomInfoMapper.pageItem(roomItemVoPage, queryVo);
@@ -71,28 +76,33 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
 
     @Override
     public RoomDetailVo getDetailById(Long id) {
+        String key = RedisConstant.APP_ROOM_PREFIX + id;
+        RoomDetailVo roomDetailVo = (RoomDetailVo)redisTemplate.opsForValue().get(key);
+        if(roomDetailVo == null){
+            RoomInfo roomInfo = roomInfoMapper.selectById(id);
+            if(roomInfo == null) return null;
+            ApartmentItemVo apartmentItemVo = apartmentInfoService.selectApartmentItemVoById(roomInfo.getApartmentId());
+            List<GraphVo> graphVoList = graphInfoMapper.selectListByItemTypeAndId(ItemType.ROOM, id);
+            List<AttrValueVo> attrValueVoList = attrValueMapper.selectListByRoomId(id);
+            List<FacilityInfo> facilityInfoList = facilityInfoMapper.selectListByRoomId(id);
+            List<LabelInfo> labelInfoList = labelInfoMapper.selectListByRoomId(id);
+            List<PaymentType> paymentTypeList = paymentTypeMapper.selectListByRoomId(id);
+            List<FeeValueVo> feeValueVoList = feeValueMapper.selectByRoomId(roomInfo.getApartmentId());
+            List<LeaseTerm> leaseTermList = leaseTermMapper.selectListByRoomId(id);
 
-        RoomInfo roomInfo = roomInfoMapper.selectById(id);
-        if(roomInfo == null) return null;
-        ApartmentItemVo apartmentItemVo = apartmentInfoService.selectApartmentItemVoById(roomInfo.getApartmentId());
-        List<GraphVo> graphVoList = graphInfoMapper.selectListByItemTypeAndId(ItemType.ROOM, id);
-        List<AttrValueVo> attrValueVoList = attrValueMapper.selectListByRoomId(id);
-        List<FacilityInfo> facilityInfoList = facilityInfoMapper.selectListByRoomId(id);
-        List<LabelInfo> labelInfoList = labelInfoMapper.selectListByRoomId(id);
-        List<PaymentType> paymentTypeList = paymentTypeMapper.selectListByRoomId(id);
-        List<FeeValueVo> feeValueVoList = feeValueMapper.selectByRoomId(roomInfo.getApartmentId());
-        List<LeaseTerm> leaseTermList = leaseTermMapper.selectListByRoomId(id);
+            roomDetailVo = new RoomDetailVo();
+            BeanUtils.copyProperties(roomInfo, roomDetailVo);
+            roomDetailVo.setApartmentItemVo(apartmentItemVo);
+            roomDetailVo.setGraphVoList(graphVoList);
+            roomDetailVo.setAttrValueVoList(attrValueVoList);
+            roomDetailVo.setFacilityInfoList(facilityInfoList);
+            roomDetailVo.setLabelInfoList(labelInfoList);
+            roomDetailVo.setPaymentTypeList(paymentTypeList);
+            roomDetailVo.setFeeValueVoList(feeValueVoList);
+            roomDetailVo.setLeaseTermList(leaseTermList);
 
-        RoomDetailVo roomDetailVo = new RoomDetailVo();
-        BeanUtils.copyProperties(roomInfo, roomDetailVo);
-        roomDetailVo.setApartmentItemVo(apartmentItemVo);
-        roomDetailVo.setGraphVoList(graphVoList);
-        roomDetailVo.setAttrValueVoList(attrValueVoList);
-        roomDetailVo.setFacilityInfoList(facilityInfoList);
-        roomDetailVo.setLabelInfoList(labelInfoList);
-        roomDetailVo.setPaymentTypeList(paymentTypeList);
-        roomDetailVo.setFeeValueVoList(feeValueVoList);
-        roomDetailVo.setLeaseTermList(leaseTermList);
+            redisTemplate.opsForValue().set(key, roomDetailVo);
+        }
 
         browsingHistoryService.saveHistory(LoginUserHolder.getLoginUser().getUserId(), id);
 

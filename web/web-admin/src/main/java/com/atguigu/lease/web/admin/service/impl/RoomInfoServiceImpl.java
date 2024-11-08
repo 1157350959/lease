@@ -1,5 +1,6 @@
 package com.atguigu.lease.web.admin.service.impl;
 
+import com.atguigu.lease.common.constant.RedisConstant;
 import com.atguigu.lease.model.entity.*;
 import com.atguigu.lease.model.enums.ItemType;
 import com.atguigu.lease.web.admin.mapper.*;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import kotlin.jvm.internal.Lambda;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -74,6 +76,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
     @Autowired
     private LeaseTermMapper leaseTermMapper;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @Override
     public void saveOrUpdateRoomSubmitVo(RoomSubmitVo roomSubmitVo) {
         boolean is_update = roomSubmitVo.getRoomNumber() != null;
@@ -103,6 +108,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
             LambdaQueryWrapper<RoomLeaseTerm> roomLeaseTermLambdaQueryWrapper = new LambdaQueryWrapper<>();
             roomLeaseTermLambdaQueryWrapper.eq(RoomLeaseTerm::getRoomId, roomSubmitVo.getId());
             roomLeaseTermService.remove(roomLeaseTermLambdaQueryWrapper);
+
+            String key = RedisConstant.APP_ROOM_PREFIX + roomSubmitVo.getId();
+            redisTemplate.delete(key);
         }
 
         List<GraphVo> graphVoList = roomSubmitVo.getGraphVoList();
@@ -233,6 +241,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         LambdaQueryWrapper<RoomLeaseTerm> roomLeaseTermLambdaQueryWrapper = new LambdaQueryWrapper<>();
         roomLeaseTermLambdaQueryWrapper.eq(RoomLeaseTerm::getRoomId, id);
         roomLeaseTermService.remove(roomLeaseTermLambdaQueryWrapper);
+
+        String key = RedisConstant.APP_ROOM_PREFIX + id;
+        redisTemplate.delete(key);
     }
 }
 
