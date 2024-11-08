@@ -1,13 +1,12 @@
 package com.atguigu.lease.web.app.service.impl;
 
 import com.atguigu.lease.model.entity.ApartmentInfo;
+import com.atguigu.lease.model.entity.FacilityInfo;
 import com.atguigu.lease.model.entity.LabelInfo;
 import com.atguigu.lease.model.enums.ItemType;
-import com.atguigu.lease.web.app.mapper.ApartmentInfoMapper;
-import com.atguigu.lease.web.app.mapper.GraphInfoMapper;
-import com.atguigu.lease.web.app.mapper.LabelInfoMapper;
-import com.atguigu.lease.web.app.mapper.RoomInfoMapper;
+import com.atguigu.lease.web.app.mapper.*;
 import com.atguigu.lease.web.app.service.ApartmentInfoService;
+import com.atguigu.lease.web.app.vo.apartment.ApartmentDetailVo;
 import com.atguigu.lease.web.app.vo.apartment.ApartmentItemVo;
 import com.atguigu.lease.web.app.vo.graph.GraphVo;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -40,6 +39,9 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
     @Autowired
     private RoomInfoMapper roomInfoMapper;
 
+    @Autowired
+    private FacilityInfoMapper facilityInfoMapper;
+
     @Override
     public ApartmentItemVo selectApartmentItemVoById(Long apartmentId) {
         ApartmentInfo apartmentInfo = apartmentInfoMapper.selectById(apartmentId);
@@ -53,6 +55,24 @@ public class ApartmentInfoServiceImpl extends ServiceImpl<ApartmentInfoMapper, A
         apartmentItemVo.setGraphVoList(graphVoList);
         apartmentItemVo.setMinRent(minRent);
         return apartmentItemVo;
+    }
+
+    @Override
+    public ApartmentDetailVo getApartmentDeatilById(Long id) {
+        ApartmentInfo apartmentInfo = apartmentInfoMapper.selectById(id);
+        List<GraphVo> graphVoList = graphInfoMapper.selectListByItemTypeAndId(ItemType.APARTMENT, id);
+        List<LabelInfo> labelInfoList = labelInfoMapper.selectListByApartmentId(id);
+        List<FacilityInfo> facilityInfoList = facilityInfoMapper.selectListByApartmentId(id);
+        BigDecimal minRent = roomInfoMapper.selectMinRentByApartmentId(id);
+
+        ApartmentDetailVo apartmentDetailVo = new ApartmentDetailVo();
+
+        BeanUtils.copyProperties(apartmentInfo, apartmentDetailVo);
+        apartmentDetailVo.setGraphVoList(graphVoList);
+        apartmentDetailVo.setLabelInfoList(labelInfoList);
+        apartmentDetailVo.setFacilityInfoList(facilityInfoList);
+        apartmentDetailVo.setMinRent(minRent);
+        return apartmentDetailVo;
     }
 }
 
