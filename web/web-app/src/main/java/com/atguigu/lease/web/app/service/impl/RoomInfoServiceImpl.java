@@ -1,11 +1,27 @@
 package com.atguigu.lease.web.app.service.impl;
 
-import com.atguigu.lease.model.entity.RoomInfo;
-import com.atguigu.lease.web.app.mapper.RoomInfoMapper;
+import com.atguigu.lease.model.entity.*;
+import com.atguigu.lease.model.enums.ItemType;
+import com.atguigu.lease.web.app.mapper.*;
+import com.atguigu.lease.web.app.service.ApartmentInfoService;
+import com.atguigu.lease.web.app.service.GraphInfoService;
 import com.atguigu.lease.web.app.service.RoomInfoService;
+import com.atguigu.lease.web.app.vo.apartment.ApartmentItemVo;
+import com.atguigu.lease.web.app.vo.attr.AttrValueVo;
+import com.atguigu.lease.web.app.vo.fee.FeeValueVo;
+import com.atguigu.lease.web.app.vo.graph.GraphVo;
+import com.atguigu.lease.web.app.vo.room.RoomDetailVo;
+import com.atguigu.lease.web.app.vo.room.RoomItemVo;
+import com.atguigu.lease.web.app.vo.room.RoomQueryVo;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * @author liubo
@@ -16,7 +32,70 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         implements RoomInfoService {
+    @Autowired
+    private RoomInfoMapper roomInfoMapper;
 
+    @Autowired
+    private ApartmentInfoService apartmentInfoService;
+
+    @Autowired
+    private GraphInfoMapper graphInfoMapper;
+
+    @Autowired
+    private AttrValueMapper attrValueMapper;
+
+    @Autowired
+    private FacilityInfoMapper facilityInfoMapper;
+
+    @Autowired
+    private LabelInfoMapper labelInfoMapper;
+
+    @Autowired
+    private PaymentTypeMapper paymentTypeMapper;
+
+    @Autowired
+    private FeeValueMapper feeValueMapper;
+
+    @Autowired
+    private LeaseTermMapper leaseTermMapper;
+
+    @Override
+    public IPage<RoomItemVo> pageItem(Page<RoomItemVo> roomItemVoPage, RoomQueryVo queryVo) {
+        return roomInfoMapper.pageItem(roomItemVoPage, queryVo);
+    }
+
+    @Override
+    public RoomDetailVo getDetailById(Long id) {
+
+        RoomInfo roomInfo = roomInfoMapper.selectById(id);
+        if(roomInfo == null) return null;
+        ApartmentItemVo apartmentItemVo = apartmentInfoService.selectApartmentItemVoById(roomInfo.getApartmentId());
+        List<GraphVo> graphVoList = graphInfoMapper.selectListByItemTypeAndId(ItemType.ROOM, id);
+        List<AttrValueVo> attrValueVoList = attrValueMapper.selectListByRoomId(id);
+        List<FacilityInfo> facilityInfoList = facilityInfoMapper.selectListByRoomId(id);
+        List<LabelInfo> labelInfoList = labelInfoMapper.selectListByRoomId(id);
+        List<PaymentType> paymentTypeList = paymentTypeMapper.selectListByRoomId(id);
+        List<FeeValueVo> feeValueVoList = feeValueMapper.selectByRoomId(roomInfo.getApartmentId());
+        List<LeaseTerm> leaseTermList = leaseTermMapper.selectListByRoomId(id);
+
+        RoomDetailVo roomDetailVo = new RoomDetailVo();
+        BeanUtils.copyProperties(roomInfo, roomDetailVo);
+        roomDetailVo.setApartmentItemVo(apartmentItemVo);
+        roomDetailVo.setGraphVoList(graphVoList);
+        roomDetailVo.setAttrValueVoList(attrValueVoList);
+        roomDetailVo.setFacilityInfoList(facilityInfoList);
+        roomDetailVo.setLabelInfoList(labelInfoList);
+        roomDetailVo.setPaymentTypeList(paymentTypeList);
+        roomDetailVo.setFeeValueVoList(feeValueVoList);
+        roomDetailVo.setLeaseTermList(leaseTermList);
+
+        return roomDetailVo;
+    }
+
+    @Override
+    public IPage<RoomItemVo> pageItemByApartmentId(Page<RoomItemVo> roomItemVoPage, Long id) {
+        return roomInfoMapper.pageItemByApartmentId(roomItemVoPage, id);
+    }
 }
 
 
