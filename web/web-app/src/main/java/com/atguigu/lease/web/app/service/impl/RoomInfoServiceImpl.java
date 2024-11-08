@@ -1,9 +1,11 @@
 package com.atguigu.lease.web.app.service.impl;
 
+import com.atguigu.lease.common.login.LoginUserHolder;
 import com.atguigu.lease.model.entity.*;
 import com.atguigu.lease.model.enums.ItemType;
 import com.atguigu.lease.web.app.mapper.*;
 import com.atguigu.lease.web.app.service.ApartmentInfoService;
+import com.atguigu.lease.web.app.service.BrowsingHistoryService;
 import com.atguigu.lease.web.app.service.GraphInfoService;
 import com.atguigu.lease.web.app.service.RoomInfoService;
 import com.atguigu.lease.web.app.vo.apartment.ApartmentItemVo;
@@ -59,6 +61,9 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
     @Autowired
     private LeaseTermMapper leaseTermMapper;
 
+    @Autowired
+    private BrowsingHistoryService browsingHistoryService;
+
     @Override
     public IPage<RoomItemVo> pageItem(Page<RoomItemVo> roomItemVoPage, RoomQueryVo queryVo) {
         return roomInfoMapper.pageItem(roomItemVoPage, queryVo);
@@ -88,6 +93,8 @@ public class RoomInfoServiceImpl extends ServiceImpl<RoomInfoMapper, RoomInfo>
         roomDetailVo.setPaymentTypeList(paymentTypeList);
         roomDetailVo.setFeeValueVoList(feeValueVoList);
         roomDetailVo.setLeaseTermList(leaseTermList);
+
+        browsingHistoryService.saveHistory(LoginUserHolder.getLoginUser().getUserId(), id);
 
         return roomDetailVo;
     }
